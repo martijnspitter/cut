@@ -14,6 +14,7 @@ type Cmd struct {
 
 var (
 	f int
+	d string
 )
 
 func NewCmd() *Cmd {
@@ -36,13 +37,12 @@ func NewCmd() *Cmd {
 				     `,
 			Args: cobra.ExactArgs(1),
 			Run: func(cmd *cobra.Command, args []string) {
-				p := parser.NewParser(args[0], f)
-				field, err := p.Parse()
+				p := parser.NewParser(args[0], f, d)
+				err := p.Parse()
 				if err != nil {
 					fmt.Fprintln(os.Stderr, err)
 					os.Exit(1)
 				}
-				fmt.Fprintln(os.Stderr, field)
 				os.Exit(0)
 			},
 		},
@@ -51,6 +51,8 @@ func NewCmd() *Cmd {
 
 func (c *Cmd) Execute() {
 	c.rootCmd.PersistentFlags().IntVarP(&f, "field", "f", 0, "The list specifies fields, separated in the input by the field delimiter character (see the -d option). Output fields are separated by a single occurrence of the field delimiter character.")
+	c.rootCmd.PersistentFlags().StringVarP(&d, "delimiter", "d", "\t", "Use delim as the field delimiter character instead of the tab character.")
+
 	if err := c.rootCmd.Execute(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

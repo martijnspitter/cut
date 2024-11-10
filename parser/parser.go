@@ -2,6 +2,7 @@ package parser
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -13,27 +14,26 @@ type Parser struct {
 	delimeter  string
 }
 
-func NewParser(path string, f int) *Parser {
+func NewParser(path string, f int, d string) *Parser {
 	return &Parser{
 		path:       path,
 		fieldCount: f,
-		delimeter:  "\t",
+		delimeter:  d,
 	}
 }
 
-func (p *Parser) Parse() (string, error) {
+func (p *Parser) Parse() error {
 	file, err := os.Open(p.path)
 	if err != nil {
-		return "", err
+		return err
 	}
 	defer file.Close()
 
-	return p.FindFields(file)
+	return p.FindFields(file, os.Stdout)
 }
 
-func (p *Parser) FindFields(reader io.Reader) (string, error) {
+func (p *Parser) FindFields(reader io.Reader, writer io.Writer) error {
 	scanner := bufio.NewScanner(reader)
-	var parts []string
 
 	// Process the file line by line
 	for scanner.Scan() {
@@ -43,14 +43,15 @@ func (p *Parser) FindFields(reader io.Reader) (string, error) {
 		}
 
 		part := p.FindNthField(line)
-		parts = append(parts, part)
+		if part != "" {
+			// Write each line immediately
+			if _, err := fmt.Fprintln(writer, part); err != nil {
+				return err
+			}
+		}
 	}
 
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-
-	return strings.Join(parts, "\n"), nil
+	return scanner.Err()
 }
 
 func (p *Parser) FindNthField(line string) string {
