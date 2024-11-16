@@ -4,6 +4,8 @@ import (
 	"cut/parser"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -13,9 +15,39 @@ type Cmd struct {
 }
 
 var (
-	f int
-	d string
+	f    []int
+	d    string
+	fStr string
 )
+
+// parseFields converts a string of numbers (comma or space separated) into a slice of integers
+func parseFields(s string) ([]int, error) {
+	// Handle empty input
+	if len(strings.TrimSpace(s)) == 0 {
+		return nil, nil
+	}
+
+	// First split by comma
+	parts := strings.Split(s, ",")
+
+	var result []int
+	for _, part := range parts {
+		// Then split by whitespace
+		numbers := strings.Fields(strings.TrimSpace(part))
+		for _, numStr := range numbers {
+			num, err := strconv.Atoi(strings.TrimSpace(numStr))
+			if err != nil {
+				return nil, fmt.Errorf("invalid field number: %s", numStr)
+			}
+			if num < 1 {
+				return nil, fmt.Errorf("field numbers must be positive: %d", num)
+			}
+			result = append(result, num)
+		}
+	}
+
+	return result, nil
+}
 
 func NewCmd() *Cmd {
 	return &Cmd{
@@ -36,6 +68,14 @@ func NewCmd() *Cmd {
 				     not an error to select columns or fields not present in the input line.
 				     `,
 			Args: cobra.ExactArgs(1),
+			PreRunE: func(cmd *cobra.Command, args []string) error {
+				var err error
+				f, err = parseFields(fStr)
+				if err != nil {
+					return err
+				}
+				return nil
+			},
 			Run: func(cmd *cobra.Command, args []string) {
 				p := parser.NewParser(args[0], f, d)
 				err := p.Parse()
@@ -50,7 +90,8 @@ func NewCmd() *Cmd {
 }
 
 func (c *Cmd) Execute() {
-	c.rootCmd.PersistentFlags().IntVarP(&f, "field", "f", 0, "The list specifies fields, separated in the input by the field delimiter character (see the -d option). Output fields are separated by a single occurrence of the field delimiter character.")
+	c.rootCmd.PersistentFlags().StringVarP(&fStr, "field", "f", "",
+		"The list specifies fields, separated by commas or spaces (e.g., '1,2,3' or '1 2 3')")
 	c.rootCmd.PersistentFlags().StringVarP(&d, "delimiter", "d", "\t", "Use delim as the field delimiter character instead of the tab character.")
 
 	if err := c.rootCmd.Execute(); err != nil {

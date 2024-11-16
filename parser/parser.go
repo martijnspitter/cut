@@ -10,11 +10,11 @@ import (
 
 type Parser struct {
 	path       string
-	fieldCount int
+	fieldCount []int
 	delimeter  string
 }
 
-func NewParser(path string, f int, d string) *Parser {
+func NewParser(path string, f []int, d string) *Parser {
 	return &Parser{
 		path:       path,
 		fieldCount: f,
@@ -57,10 +57,16 @@ func (p *Parser) FindFields(reader io.Reader, writer io.Writer) error {
 func (p *Parser) FindNthField(line string) string {
 	lineParts := strings.Split(line, p.delimeter)
 
+	str := ""
+
 	// Handle index out of range
-	if p.fieldCount > len(lineParts) {
-		return ""
+	for i := range p.fieldCount {
+		if p.fieldCount[i] > len(lineParts) {
+			return ""
+		}
+
+		str = str + "," + lineParts[p.fieldCount[i]-1]
 	}
 
-	return lineParts[p.fieldCount-1]
+	return strings.TrimLeft(str, ",")
 }
