@@ -23,13 +23,26 @@ func NewParser(path string, f []int, d string) *Parser {
 }
 
 func (p *Parser) Parse() error {
-	file, err := os.Open(p.path)
+	reader, err := p.GetReader()
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer reader.Close()
 
-	return p.FindFields(file, os.Stdout)
+	return p.FindFields(reader, os.Stdout)
+}
+
+func (p *Parser) GetReader() (*os.File, error) {
+	if p.path == "" {
+		return os.Stdin, nil
+	}
+
+	file, err := os.Open(p.path)
+	if err != nil {
+		return nil, err
+	}
+
+	return file, nil
 }
 
 func (p *Parser) FindFields(reader io.Reader, writer io.Writer) error {

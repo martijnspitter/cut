@@ -67,7 +67,6 @@ func NewCmd() *Cmd {
 				     in any order.  If a field or column is specified multiple times, it will appear only once in the output.  It is
 				     not an error to select columns or fields not present in the input line.
 				     `,
-			Args: cobra.ExactArgs(1),
 			PreRunE: func(cmd *cobra.Command, args []string) error {
 				var err error
 				f, err = parseFields(fStr)
